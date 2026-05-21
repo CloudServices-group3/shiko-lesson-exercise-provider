@@ -1,0 +1,6 @@
+@Shiko.LessonExerciseProvider.Api_HostAddress = http://localhost:5239
+
+GET {{Shiko.LessonExerciseProvider.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Shiko.LessonExerciseProvider.Api/Shiko.LessonExerciseProvider.Api.csproj" />
+  </Folder>
+</Solution>
