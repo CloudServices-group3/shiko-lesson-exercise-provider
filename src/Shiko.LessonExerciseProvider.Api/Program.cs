@@ -1,6 +1,12 @@
+using Microsoft.EntityFrameworkCore;
+using Shiko.LessonExerciseProvider.Api.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddDbContext<LessonExerciseDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("LessonExerciseDatabase")));
 
+builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -10,6 +16,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.MapControllers();
 
 app.MapGet("/health", () =>
     Results.Ok(new
