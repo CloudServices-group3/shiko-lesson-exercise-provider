@@ -16,7 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Data\Configurations\" />
     <Folder Include="Contracts\" />
     <Folder Include="Controllers\" />
     <Folder Include="Services\" />
