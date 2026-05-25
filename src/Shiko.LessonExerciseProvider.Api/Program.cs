@@ -71,6 +71,22 @@ builder.Services.AddDbContext<LessonExerciseDbContext>(options =>
 
 builder.Services.AddScoped<ILessonExerciseService, LessonExerciseService>();
 
+const string FrontendCorsPolicy = "FrontendCorsPolicy";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(FrontendCorsPolicy, policy =>
+    {
+        policy
+            .WithOrigins(
+                "http://localhost:3000",
+                "https://localhost:3000"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 
 app.MapOpenApi();
@@ -81,6 +97,8 @@ app.MapScalarApiReference(options =>
 });
 
 app.UseHttpsRedirection();
+
+app.UseCors(FrontendCorsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();
