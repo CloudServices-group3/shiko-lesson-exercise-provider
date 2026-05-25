@@ -60,7 +60,14 @@ builder.Services
 builder.Services.AddAuthorization();
 
 builder.Services.AddDbContext<LessonExerciseDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("LessonExerciseDatabase")));
+{
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("LessonExerciseDatabase"),
+        sqlOptions =>
+        {
+            sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "lesson_exercise");
+        });
+});
 
 builder.Services.AddScoped<ILessonExerciseService, LessonExerciseService>();
 
