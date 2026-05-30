@@ -4,7 +4,7 @@ Small ASP.NET Core Web API provider for lesson exercises and user lesson progres
 
 This provider handles lesson exercises for a course, lesson duration, total lesson count, total lesson duration, and which lessons a logged-in user has completed.
 
-Uses EF Core with Azure SQL. Tables are stored in the lesson_exercise schema because my providers share the same Azure SQL database.
+Uses EF Core with Azure SQL. Tables are stored in the `lesson_exercise` schema because my providers share the same Azure SQL database.
 
 Connection strings and JWT settings are stored with user secrets locally and environment variables in Azure.
 
@@ -32,20 +32,22 @@ https://shiko-lesson-exercise-provider.azurewebsites.net/openapi/v1.json
 
 The Lesson Exercise Provider owns:
 
-- lesson exercises for a course
-- lesson duration
-- total lesson count
-- total lesson duration
-- completed lessons per user
-- course progress data that other modules can use later
+* lesson exercises for a course
+* lesson duration
+* total lesson count
+* total lesson duration
+* completed lessons per user
+* course progress data that other modules can use later
 
-The Course Provider owns course data like title, image and description.
+The Course Provider owns basic course data like title and image.
 
-The Lesson Exercise Provider only stores CourseId as an external reference. It does not have a database relationship to the Course Provider.
+The Course Details Provider owns course overview/about text and key points.
+
+The Lesson Exercise Provider only stores `CourseId` as an external reference. It does not have a database relationship to the Course Provider.
 
 ## Endpoints
 
-### Auth protected endpoints
+### User endpoints
 
 These require JWT Bearer auth.
 
@@ -53,17 +55,35 @@ GET /api/courses/{courseId}/lesson-exercises/me
 
 PUT /api/courses/{courseId}/lesson-exercises/{lessonExerciseId}/complete
 
-The user id is read from the JWT token. Frontend should not send userId in the request body.
+The user id is read from the JWT token. Frontend should not send `userId` in the request body.
 
-GET returns all lesson exercises for the selected course and marks which lessons the logged-in user has completed.
+GET returns all active lesson exercises for the selected course and marks which lessons the logged-in user has completed.
 
-PUT marks one lesson as completed for the logged-in user. Calling the same endpoint again does not create duplicates.
+PUT marks one active lesson as completed for the logged-in user. Calling the same endpoint again does not create duplicates.
+
+Soft-deleted lessons are not returned, counted or possible to complete.
+
+### Admin endpoints
+
+These require JWT Bearer auth with the `Admin` role.
+
+GET /api/admin/courses/{courseId}/lesson-exercises
+
+POST /api/admin/courses/{courseId}/lesson-exercises
+
+PUT /api/admin/courses/{courseId}/lesson-exercises/{lessonExerciseId}
+
+DELETE /api/admin/courses/{courseId}/lesson-exercises/{lessonExerciseId}
+
+Admin endpoints are used to manage lesson exercises for a course.
+
+DELETE uses soft delete. The lesson is hidden from both admin and user lists, and it is no longer counted in course lesson totals. The row stays in the database so existing progress data is not broken.
 
 ## Local config
 
 Local development uses SQL Server LocalDB.
 
-The local database connection string is stored in appsettings.Development.json:
+The local database connection string is stored in `appsettings.Development.json`:
 
 ConnectionStrings:LessonExerciseDatabase
 
@@ -93,12 +113,12 @@ Jwt__SigningKey
 
 ## Database
 
-Tables are stored in the lesson_exercise schema:
+Tables are stored in the `lesson_exercise` schema:
 
-- lesson_exercise.LessonExercises
-- lesson_exercise.UserCourseProgresses
-- lesson_exercise.UserCompletedLessons
-- lesson_exercise.__EFMigrationsHistory
+* lesson_exercise.LessonExercises
+* lesson_exercise.UserCourseProgresses
+* lesson_exercise.UserCompletedLessons
+* lesson_exercise.__EFMigrationsHistory
 
 Run migrations with:
 
@@ -116,20 +136,50 @@ https://localhost:7123/scalar
 
 ## Current test data
 
-For demo/testing, lesson data has been inserted manually for the Digital Marketing course.
+For demo/testing, lesson data can be created through the admin endpoints.
 
-CourseId:
+Example CourseId used during local testing:
 
 bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb
 
-The course currently has 5 lesson exercises with a total duration of 78 minutes.
+Admin can create lesson exercises for this course through:
+
+POST /api/admin/courses/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/lesson-exercises
+
+Example request body:
+
+{
+"title": "Introduction to the course",
+"durationMinutes": 20,
+"orderIndex": 1
+}
+
+## Tested locally
+
+The following flows have been tested locally:
+
+* admin GET returns active lessons for a course
+* admin POST creates a lesson exercise
+* admin PUT updates a lesson exercise
+* admin DELETE soft-deletes a lesson exercise
+* user GET returns active lessons and progress
+* soft-deleted lessons are not returned or counted
+* soft-deleted lessons cannot be completed
+
+Expected security behavior:
+
+* admin endpoints return 401 without a token
+* admin endpoints require a JWT token with the Admin role
+* user endpoints require a valid JWT token
 
 ## Notes
 
-Course Provider currently returns lessonCount and duration, but Lesson Exercise Provider should be the source of truth for lesson count and lesson duration later.
+Course Provider currently returns `lessonCount` and `duration`, but Lesson Exercise Provider should be the source of truth for lesson count and lesson duration later.
 
-Admin create, update and delete for lessons is not built yet. That belongs to a later admin flow.
-
-The current MVP flow supports reading lessons and marking lessons as completed.
+The current MVP flow supports reading lessons, marking lessons as completed, and managing course lesson exercises through admin endpoints.
 
 Completed lessons are stored per user and course. If no completed lessons exist for a user, the course can later be treated as not started. If some but not all lessons are completed, it can be treated as in progress. If all lessons are completed, it can be treated as finished.
+
+Lessons use soft delete because users may already have progress connected to a lesson. When admin deletes a lesson, it should disappear from the course and stop counting toward progress totals, but existing progress data should not be broken.
+
+A future Course Provider delete/archive flow could publish an event that Lesson Exercise Provider listens to. In that case, Lesson Exercise Provider can soft-delete lesson exercises for that course. This is not implemented now.

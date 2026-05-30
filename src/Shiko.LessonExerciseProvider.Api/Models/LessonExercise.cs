@@ -11,4 +11,8 @@ public class LessonExercise
     public int DurationMinutes { get; set; }
 
     public int OrderIndex { get; set; }
+
+    public bool IsDeleted { get; set; }
+
+    public DateTime? DeletedAtUtc { get; set; }
 }
