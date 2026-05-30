@@ -25,6 +25,11 @@ public class LessonExerciseConfiguration : IEntityTypeConfiguration<LessonExerci
         builder.Property(x => x.OrderIndex)
             .IsRequired();
 
+        builder.Property(x => x.IsDeleted)
+            .IsRequired();
+
+        builder.Property(x => x.DeletedAtUtc);
+
         builder.HasIndex(x => new { x.CourseId, x.OrderIndex });
     }
 }
