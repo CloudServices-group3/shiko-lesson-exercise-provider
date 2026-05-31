@@ -196,4 +196,218 @@ public sealed class AdminLessonExerciseEndpointTests
                 Assert.Equal(4, fourth.OrderIndex);
             });
     }
+
+    [Fact]
+    public async Task UpdateLessonExercise_WhenMovedToLowerOrderIndex_MovesExistingLessonsDown()
+    {
+        await _fixture.ResetDatabaseAsync();
+
+        var courseId = Guid.NewGuid();
+
+        var firstLesson = new LessonExercise
+        {
+            Id = Guid.NewGuid(),
+            CourseId = courseId,
+            Title = "First lesson",
+            DurationMinutes = 10,
+            OrderIndex = 1
+        };
+
+        var secondLesson = new LessonExercise
+        {
+            Id = Guid.NewGuid(),
+            CourseId = courseId,
+            Title = "Second lesson",
+            DurationMinutes = 20,
+            OrderIndex = 2
+        };
+
+        var thirdLesson = new LessonExercise
+        {
+            Id = Guid.NewGuid(),
+            CourseId = courseId,
+            Title = "Third lesson",
+            DurationMinutes = 30,
+            OrderIndex = 3
+        };
+
+        var fourthLesson = new LessonExercise
+        {
+            Id = Guid.NewGuid(),
+            CourseId = courseId,
+            Title = "Fourth lesson",
+            DurationMinutes = 40,
+            OrderIndex = 4
+        };
+
+        await _fixture.SeedLessonExercisesAsync(
+            firstLesson,
+            secondLesson,
+            thirdLesson,
+            fourthLesson);
+
+        using var updateRequest = new HttpRequestMessage(
+            HttpMethod.Put,
+            $"/api/admin/courses/{courseId}/lesson-exercises/{fourthLesson.Id}");
+
+        updateRequest.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            JwtTokenFactory.CreateAdminToken());
+
+        updateRequest.Content = JsonContent.Create(new UpdateLessonExerciseRequest(
+            "Fourth lesson",
+            40,
+            2));
+
+        var updateResponse = await _fixture.Client.SendAsync(updateRequest);
+
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+
+        using var getRequest = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/admin/courses/{courseId}/lesson-exercises");
+
+        getRequest.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            JwtTokenFactory.CreateAdminToken());
+
+        var getResponse = await _fixture.Client.SendAsync(getRequest);
+
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+
+        var lessons = await getResponse.Content
+            .ReadFromJsonAsync<List<LessonExerciseResponse>>();
+
+        Assert.NotNull(lessons);
+
+        Assert.Collection(
+            lessons.OrderBy(x => x.OrderIndex),
+            first =>
+            {
+                Assert.Equal("First lesson", first.Title);
+                Assert.Equal(1, first.OrderIndex);
+            },
+            second =>
+            {
+                Assert.Equal("Fourth lesson", second.Title);
+                Assert.Equal(2, second.OrderIndex);
+            },
+            third =>
+            {
+                Assert.Equal("Second lesson", third.Title);
+                Assert.Equal(3, third.OrderIndex);
+            },
+            fourth =>
+            {
+                Assert.Equal("Third lesson", fourth.Title);
+                Assert.Equal(4, fourth.OrderIndex);
+            });
+    }
+
+    [Fact]
+    public async Task UpdateLessonExercise_WhenMovedToHigherOrderIndex_MovesExistingLessonsUp()
+    {
+        await _fixture.ResetDatabaseAsync();
+
+        var courseId = Guid.NewGuid();
+
+        var firstLesson = new LessonExercise
+        {
+            Id = Guid.NewGuid(),
+            CourseId = courseId,
+            Title = "First lesson",
+            DurationMinutes = 10,
+            OrderIndex = 1
+        };
+
+        var secondLesson = new LessonExercise
+        {
+            Id = Guid.NewGuid(),
+            CourseId = courseId,
+            Title = "Second lesson",
+            DurationMinutes = 20,
+            OrderIndex = 2
+        };
+
+        var thirdLesson = new LessonExercise
+        {
+            Id = Guid.NewGuid(),
+            CourseId = courseId,
+            Title = "Third lesson",
+            DurationMinutes = 30,
+            OrderIndex = 3
+        };
+
+        var fourthLesson = new LessonExercise
+        {
+            Id = Guid.NewGuid(),
+            CourseId = courseId,
+            Title = "Fourth lesson",
+            DurationMinutes = 40,
+            OrderIndex = 4
+        };
+
+        await _fixture.SeedLessonExercisesAsync(
+            firstLesson,
+            secondLesson,
+            thirdLesson,
+            fourthLesson);
+
+        using var updateRequest = new HttpRequestMessage(
+            HttpMethod.Put,
+            $"/api/admin/courses/{courseId}/lesson-exercises/{secondLesson.Id}");
+
+        updateRequest.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            JwtTokenFactory.CreateAdminToken());
+
+        updateRequest.Content = JsonContent.Create(new UpdateLessonExerciseRequest(
+            "Second lesson",
+            20,
+            4));
+
+        var updateResponse = await _fixture.Client.SendAsync(updateRequest);
+
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+
+        using var getRequest = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/admin/courses/{courseId}/lesson-exercises");
+
+        getRequest.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            JwtTokenFactory.CreateAdminToken());
+
+        var getResponse = await _fixture.Client.SendAsync(getRequest);
+
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+
+        var lessons = await getResponse.Content
+            .ReadFromJsonAsync<List<LessonExerciseResponse>>();
+
+        Assert.NotNull(lessons);
+
+        Assert.Collection(
+            lessons.OrderBy(x => x.OrderIndex),
+            first =>
+            {
+                Assert.Equal("First lesson", first.Title);
+                Assert.Equal(1, first.OrderIndex);
+            },
+            second =>
+            {
+                Assert.Equal("Third lesson", second.Title);
+                Assert.Equal(2, second.OrderIndex);
+            },
+            third =>
+            {
+                Assert.Equal("Fourth lesson", third.Title);
+                Assert.Equal(3, third.OrderIndex);
+            },
+            fourth =>
+            {
+                Assert.Equal("Second lesson", fourth.Title);
+                Assert.Equal(4, fourth.OrderIndex);
+            });
+    }
 }

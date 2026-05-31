@@ -153,9 +153,45 @@ public class LessonExerciseService : ILessonExerciseService
             return null;
         }
 
+        var oldOrderIndex = lesson.OrderIndex;
+        var newOrderIndex = request.OrderIndex;
+
+        if (newOrderIndex < oldOrderIndex)
+        {
+            var lessonsToMove = await _context.LessonExercises
+                .Where(x => x.CourseId == courseId
+                    && !x.IsDeleted
+                    && x.Id != lessonExerciseId
+                    && x.OrderIndex >= newOrderIndex
+                    && x.OrderIndex < oldOrderIndex)
+                .OrderByDescending(x => x.OrderIndex)
+                .ToListAsync(cancellationToken);
+
+            foreach (var existingLesson in lessonsToMove)
+            {
+                existingLesson.OrderIndex++;
+            }
+        }
+        else if (newOrderIndex > oldOrderIndex)
+        {
+            var lessonsToMove = await _context.LessonExercises
+                .Where(x => x.CourseId == courseId
+                    && !x.IsDeleted
+                    && x.Id != lessonExerciseId
+                    && x.OrderIndex > oldOrderIndex
+                    && x.OrderIndex <= newOrderIndex)
+                .OrderBy(x => x.OrderIndex)
+                .ToListAsync(cancellationToken);
+
+            foreach (var existingLesson in lessonsToMove)
+            {
+                existingLesson.OrderIndex--;
+            }
+        }
+
         lesson.Title = request.Title.Trim();
         lesson.DurationMinutes = request.DurationMinutes;
-        lesson.OrderIndex = request.OrderIndex;
+        lesson.OrderIndex = newOrderIndex;
 
         await _context.SaveChangesAsync(cancellationToken);
 
