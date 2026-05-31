@@ -215,8 +215,23 @@ public class LessonExerciseService : ILessonExerciseService
             return false;
         }
 
+        var deletedOrderIndex = lesson.OrderIndex;
+
         lesson.IsDeleted = true;
         lesson.DeletedAtUtc = DateTime.UtcNow;
+
+        var lessonsToMove = await _context.LessonExercises
+            .Where(x => x.CourseId == courseId
+                && !x.IsDeleted
+                && x.Id != lessonExerciseId
+                && x.OrderIndex > deletedOrderIndex)
+            .OrderBy(x => x.OrderIndex)
+            .ToListAsync(cancellationToken);
+
+        foreach (var existingLesson in lessonsToMove)
+        {
+            existingLesson.OrderIndex--;
+        }
 
         await _context.SaveChangesAsync(cancellationToken);
 
