@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Shiko.LessonExerciseProvider.Api.Models;
 using Shiko.LessonExerciseProvider.Api.Contracts.Admin;
 using Shiko.LessonExerciseProvider.Api.IntegrationTests.TestInfrastructure;
 
@@ -103,5 +104,96 @@ public sealed class AdminLessonExerciseEndpointTests
         Assert.Equal(1, lesson.OrderIndex);
         Assert.False(lesson.IsDeleted);
         Assert.Null(lesson.DeletedAtUtc);
+    }
+
+    [Fact]
+    public async Task CreateLessonExercise_WithExistingOrderIndex_MovesExistingLessonsDown()
+    {
+        await _fixture.ResetDatabaseAsync();
+
+        var courseId = Guid.NewGuid();
+
+        await _fixture.SeedLessonExercisesAsync(
+            new LessonExercise
+            {
+                Id = Guid.NewGuid(),
+                CourseId = courseId,
+                Title = "First lesson",
+                DurationMinutes = 10,
+                OrderIndex = 1
+            },
+            new LessonExercise
+            {
+                Id = Guid.NewGuid(),
+                CourseId = courseId,
+                Title = "Second lesson",
+                DurationMinutes = 20,
+                OrderIndex = 2
+            },
+            new LessonExercise
+            {
+                Id = Guid.NewGuid(),
+                CourseId = courseId,
+                Title = "Third lesson",
+                DurationMinutes = 30,
+                OrderIndex = 3
+            });
+
+        using var createRequest = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"/api/admin/courses/{courseId}/lesson-exercises");
+
+        createRequest.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            JwtTokenFactory.CreateAdminToken());
+
+        createRequest.Content = JsonContent.Create(new CreateLessonExerciseRequest(
+            "New second lesson",
+            15,
+            2));
+
+        var createResponse = await _fixture.Client.SendAsync(createRequest);
+
+        Assert.Equal(HttpStatusCode.Created, createResponse.StatusCode);
+
+        using var getRequest = new HttpRequestMessage(
+            HttpMethod.Get,
+            $"/api/admin/courses/{courseId}/lesson-exercises");
+
+        getRequest.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            JwtTokenFactory.CreateAdminToken());
+
+        var getResponse = await _fixture.Client.SendAsync(getRequest);
+
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+
+        var lessons = await getResponse.Content
+            .ReadFromJsonAsync<List<LessonExerciseResponse>>();
+
+        Assert.NotNull(lessons);
+
+        Assert.Collection(
+            lessons.OrderBy(x => x.OrderIndex),
+            first =>
+            {
+                Assert.Equal("First lesson", first.Title);
+                Assert.Equal(1, first.OrderIndex);
+            },
+            second =>
+            {
+                Assert.Equal("New second lesson", second.Title);
+                Assert.Equal(2, second.OrderIndex);
+            },
+            third =>
+            {
+                Assert.Equal("Second lesson", third.Title);
+                Assert.Equal(3, third.OrderIndex);
+            },
+            fourth =>
+            {
+                Assert.Equal("Third lesson", fourth.Title);
+                Assert.Equal(4, fourth.OrderIndex);
+            });
     }
 }

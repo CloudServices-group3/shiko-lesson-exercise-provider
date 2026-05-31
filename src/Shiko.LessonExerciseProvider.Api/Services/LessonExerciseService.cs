@@ -107,6 +107,18 @@ public class LessonExerciseService : ILessonExerciseService
         CreateLessonExerciseRequest request,
         CancellationToken cancellationToken = default)
     {
+        var lessonsToMove = await _context.LessonExercises
+            .Where(x => x.CourseId == courseId
+                && !x.IsDeleted
+                && x.OrderIndex >= request.OrderIndex)
+            .OrderByDescending(x => x.OrderIndex)
+            .ToListAsync(cancellationToken);
+
+        foreach (var existingLesson in lessonsToMove)
+        {
+            existingLesson.OrderIndex++;
+        }
+
         var lesson = new LessonExercise
         {
             Id = Guid.NewGuid(),
