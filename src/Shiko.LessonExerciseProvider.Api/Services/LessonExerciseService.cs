@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Shiko.LessonExerciseProvider.Api.Contracts;
 using Shiko.LessonExerciseProvider.Api.Data;
 using Shiko.LessonExerciseProvider.Api.Models;
@@ -6,26 +6,20 @@ using Shiko.LessonExerciseProvider.Api.Contracts.Admin;
 
 namespace Shiko.LessonExerciseProvider.Api.Services;
 
-public class LessonExerciseService : ILessonExerciseService
+public sealed class LessonExerciseService(LessonExerciseDbContext context) : ILessonExerciseService
 {
-    private readonly LessonExerciseDbContext _context;
-
-    public LessonExerciseService(LessonExerciseDbContext context)
-    {
-        _context = context;
-    }
 
     public async Task<CourseLessonExercisesResponse> GetCourseLessonExercisesAsync(
         Guid courseId,
         string userId,
         CancellationToken cancellationToken = default)
     {
-        var lessons = await _context.LessonExercises
+        var lessons = await context.LessonExercises
             .Where(x => x.CourseId == courseId && !x.IsDeleted)
             .OrderBy(x => x.OrderIndex)
             .ToListAsync(cancellationToken);
 
-        var progress = await _context.UserCourseProgresses
+        var progress = await context.UserCourseProgresses
             .Include(x => x.CompletedLessons)
             .FirstOrDefaultAsync(
                 x => x.CourseId == courseId && x.UserId == userId,
@@ -40,7 +34,7 @@ public class LessonExerciseService : ILessonExerciseService
         string userId,
         CancellationToken cancellationToken = default)
     {
-        var lessonExists = await _context.LessonExercises
+        var lessonExists = await context.LessonExercises
             .AnyAsync(
                 x => x.Id == lessonExerciseId
                 && x.CourseId == courseId
@@ -52,7 +46,7 @@ public class LessonExerciseService : ILessonExerciseService
             return null;
         }
 
-        var progress = await _context.UserCourseProgresses
+        var progress = await context.UserCourseProgresses
             .Include(x => x.CompletedLessons)
             .FirstOrDefaultAsync(
                 x => x.CourseId == courseId && x.UserId == userId,
@@ -67,7 +61,7 @@ public class LessonExerciseService : ILessonExerciseService
                 UserId = userId
             };
 
-            _context.UserCourseProgresses.Add(progress);
+            context.UserCourseProgresses.Add(progress);
         }
 
         var alreadyCompleted = progress.CompletedLessons
@@ -82,17 +76,17 @@ public class LessonExerciseService : ILessonExerciseService
                 CompletedAtUtc = DateTime.UtcNow
             });
 
-            await _context.SaveChangesAsync(cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
         }
 
         return await GetCourseLessonExercisesAsync(courseId, userId, cancellationToken);
     }
 
     public async Task<IReadOnlyList<LessonExerciseResponse>> GetAdminLessonExercisesAsync(
-    Guid courseId,
-    CancellationToken cancellationToken = default)
+        Guid courseId,
+        CancellationToken cancellationToken = default)
     {
-        var lessons = await _context.LessonExercises
+        var lessons = await context.LessonExercises
             .Where(x => x.CourseId == courseId && !x.IsDeleted)
             .OrderBy(x => x.OrderIndex)
             .ToListAsync(cancellationToken);
@@ -107,7 +101,7 @@ public class LessonExerciseService : ILessonExerciseService
         CreateLessonExerciseRequest request,
         CancellationToken cancellationToken = default)
     {
-        var lessonsToMove = await _context.LessonExercises
+        var lessonsToMove = await context.LessonExercises
             .Where(x => x.CourseId == courseId
                 && !x.IsDeleted
                 && x.OrderIndex >= request.OrderIndex)
@@ -128,9 +122,9 @@ public class LessonExerciseService : ILessonExerciseService
             OrderIndex = request.OrderIndex
         };
 
-        _context.LessonExercises.Add(lesson);
+        context.LessonExercises.Add(lesson);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
 
         return ToAdminResponse(lesson);
     }
@@ -141,7 +135,7 @@ public class LessonExerciseService : ILessonExerciseService
         UpdateLessonExerciseRequest request,
         CancellationToken cancellationToken = default)
     {
-        var lesson = await _context.LessonExercises
+        var lesson = await context.LessonExercises
             .FirstOrDefaultAsync(
                 x => x.Id == lessonExerciseId
                     && x.CourseId == courseId
@@ -158,7 +152,7 @@ public class LessonExerciseService : ILessonExerciseService
 
         if (newOrderIndex < oldOrderIndex)
         {
-            var lessonsToMove = await _context.LessonExercises
+            var lessonsToMove = await context.LessonExercises
                 .Where(x => x.CourseId == courseId
                     && !x.IsDeleted
                     && x.Id != lessonExerciseId
@@ -174,7 +168,7 @@ public class LessonExerciseService : ILessonExerciseService
         }
         else if (newOrderIndex > oldOrderIndex)
         {
-            var lessonsToMove = await _context.LessonExercises
+            var lessonsToMove = await context.LessonExercises
                 .Where(x => x.CourseId == courseId
                     && !x.IsDeleted
                     && x.Id != lessonExerciseId
@@ -193,7 +187,7 @@ public class LessonExerciseService : ILessonExerciseService
         lesson.DurationMinutes = request.DurationMinutes;
         lesson.OrderIndex = newOrderIndex;
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
 
         return ToAdminResponse(lesson);
     }
@@ -203,7 +197,7 @@ public class LessonExerciseService : ILessonExerciseService
         Guid lessonExerciseId,
         CancellationToken cancellationToken = default)
     {
-        var lesson = await _context.LessonExercises
+        var lesson = await context.LessonExercises
             .FirstOrDefaultAsync(
                 x => x.Id == lessonExerciseId
                     && x.CourseId == courseId
@@ -220,7 +214,7 @@ public class LessonExerciseService : ILessonExerciseService
         lesson.IsDeleted = true;
         lesson.DeletedAtUtc = DateTime.UtcNow;
 
-        var lessonsToMove = await _context.LessonExercises
+        var lessonsToMove = await context.LessonExercises
             .Where(x => x.CourseId == courseId
                 && !x.IsDeleted
                 && x.Id != lessonExerciseId
@@ -233,7 +227,7 @@ public class LessonExerciseService : ILessonExerciseService
             existingLesson.OrderIndex--;
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
 
         return true;
     }

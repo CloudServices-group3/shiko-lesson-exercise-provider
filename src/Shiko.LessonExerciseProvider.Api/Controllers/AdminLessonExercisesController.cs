@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shiko.LessonExerciseProvider.Api.Contracts.Admin;
 using Shiko.LessonExerciseProvider.Api.Services;
@@ -8,15 +8,8 @@ namespace Shiko.LessonExerciseProvider.Api.Controllers;
 [ApiController]
 [Authorize(Roles = "Admin")]
 [Route("api/admin/courses/{courseId:guid}/lesson-exercises")]
-public class AdminLessonExercisesController : ControllerBase
+public sealed class AdminLessonExercisesController(ILessonExerciseService lessonExerciseService) : ControllerBase
 {
-    private readonly ILessonExerciseService _lessonExerciseService;
-
-    public AdminLessonExercisesController(ILessonExerciseService lessonExerciseService)
-    {
-        _lessonExerciseService = lessonExerciseService;
-    }
-
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<LessonExerciseResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -25,7 +18,7 @@ public class AdminLessonExercisesController : ControllerBase
         Guid courseId,
         CancellationToken cancellationToken)
     {
-        var response = await _lessonExerciseService.GetAdminLessonExercisesAsync(
+        var response = await lessonExerciseService.GetAdminLessonExercisesAsync(
             courseId,
             cancellationToken);
 
@@ -42,7 +35,7 @@ public class AdminLessonExercisesController : ControllerBase
         CreateLessonExerciseRequest request,
         CancellationToken cancellationToken)
     {
-        var response = await _lessonExerciseService.CreateLessonExerciseAsync(
+        var response = await lessonExerciseService.CreateLessonExerciseAsync(
             courseId,
             request,
             cancellationToken);
@@ -65,7 +58,7 @@ public class AdminLessonExercisesController : ControllerBase
         UpdateLessonExerciseRequest request,
         CancellationToken cancellationToken)
     {
-        var response = await _lessonExerciseService.UpdateLessonExerciseAsync(
+        var response = await lessonExerciseService.UpdateLessonExerciseAsync(
             courseId,
             lessonExerciseId,
             request,
@@ -89,7 +82,7 @@ public class AdminLessonExercisesController : ControllerBase
         Guid lessonExerciseId,
         CancellationToken cancellationToken)
     {
-        var deleted = await _lessonExerciseService.DeleteLessonExerciseAsync(
+        var deleted = await lessonExerciseService.DeleteLessonExerciseAsync(
             courseId,
             lessonExerciseId,
             cancellationToken);
