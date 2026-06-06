@@ -1,10 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shiko.LessonExerciseProvider.Api.Models;
 
 namespace Shiko.LessonExerciseProvider.Api.Data.Configurations;
 
-public class UserCompletedLessonConfiguration : IEntityTypeConfiguration<UserCompletedLesson>
+public sealed class UserCompletedLessonConfiguration : IEntityTypeConfiguration<UserCompletedLesson>
 {
     public void Configure(EntityTypeBuilder<UserCompletedLesson> builder)
     {

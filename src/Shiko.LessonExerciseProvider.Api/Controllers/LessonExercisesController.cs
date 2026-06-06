@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Shiko.LessonExerciseProvider.Api.Contracts;
@@ -9,15 +9,8 @@ namespace Shiko.LessonExerciseProvider.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/courses/{courseId:guid}/lesson-exercises")]
-public class LessonExercisesController : ControllerBase
+public sealed class LessonExercisesController(ILessonExerciseService lessonExerciseService) : ControllerBase
 {
-    private readonly ILessonExerciseService _lessonExerciseService;
-
-    public LessonExercisesController(ILessonExerciseService lessonExerciseService)
-    {
-        _lessonExerciseService = lessonExerciseService;
-    }
-
     [HttpGet("me")]
     [ProducesResponseType(typeof(CourseLessonExercisesResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -32,7 +25,7 @@ public class LessonExercisesController : ControllerBase
             return Unauthorized();
         }
 
-        var response = await _lessonExerciseService.GetCourseLessonExercisesAsync(
+        var response = await lessonExerciseService.GetCourseLessonExercisesAsync(
             courseId,
             userId,
             cancellationToken);
@@ -56,7 +49,7 @@ public class LessonExercisesController : ControllerBase
             return Unauthorized();
         }
 
-        var response = await _lessonExerciseService.CompleteLessonExerciseAsync(
+        var response = await lessonExerciseService.CompleteLessonExerciseAsync(
             courseId,
             lessonExerciseId,
             userId,

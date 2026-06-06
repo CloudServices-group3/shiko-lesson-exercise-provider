@@ -1,10 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Shiko.LessonExerciseProvider.Api.Models;
 
 namespace Shiko.LessonExerciseProvider.Api.Data.Configurations;
 
-public class UserCourseProgressConfiguration : IEntityTypeConfiguration<UserCourseProgress>
+public sealed class UserCourseProgressConfiguration : IEntityTypeConfiguration<UserCourseProgress>
 {
     public void Configure(EntityTypeBuilder<UserCourseProgress> builder)
     {
